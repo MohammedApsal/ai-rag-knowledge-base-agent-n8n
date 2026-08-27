@@ -1,0 +1,190 @@
+{
+  "name": "AI RAG Knowledge Base - Chat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "00c98308-88be-4f50-aa64-b11c5aa6dd2a",
+      "name": "Webhook",
+      "webhookId": "70bf5c55-8de8-495b-972a-dd94581017e0"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.question }}",
+        "options": {
+          "systemMessage": "You are an AI Knowledge Base Assistant.\n\nYour job is to answer user questions using ONLY the information retrieved from the company's knowledge base.\n\nIMPORTANT RULES:\n\n1. Always use the knowledge base tool to search for relevant information before answering.\n2. Do not rely on your general knowledge when answering questions about the company.\n3. If the knowledge base contains the answer, provide a clear and accurate response.\n4. If the knowledge base does not contain enough information to answer the question, say:\n\"I couldn't find that information in the company knowledge base.\"\n5. Never invent, guess, or fabricate company information.\n6. Keep responses professional, helpful, and concise.\n7. When useful, combine information from multiple retrieved documents.\n8. Answer only the user's question.\n\nYour response should be easy for a customer to understand."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        368,
+        -32
+      ],
+      "id": "953759db-1ac9-4ae6-a3e3-8a5b693cd6cb",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        208
+      ],
+      "id": "58a4fc57-6e06-4717-b62d-b8e6ff124512",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "jPMFKUNNYQDkw2Ie",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search the company knowledge base for information relevant to the user's question. Use this tool whenever the user asks about ABC Technologies, including its company information, services, business hours, pricing, support, refund policy, or contact details.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        224
+      ],
+      "id": "0d04ab7e-129e-41c3-b7da-eb7aebf4faa4",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "ddjEJF72RIxn2f2q",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        352,
+        432
+      ],
+      "id": "c0e3ff88-c904-4635-a809-b7b22932bd5a",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "O6ZDG98GtmtXgzdI",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        736,
+        -32
+      ],
+      "id": "2a3f38f9-b0a5-4c8e-a3f1-6dead5ba1063",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "8768b0c2-9071-4951-b3bf-a6dfc7e2a9ff",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ab782a197a34b627a970462134e9e8786494badc720390c65408c52487825c6c"
+  },
+  "nodeGroups": [],
+  "id": "mKq23il4UhN0UJYP",
+  "tags": []
+}
